@@ -1,0 +1,10 @@
+.bar {
+  background: blue;
+  border: 1px solid blue;
+}
+
+.container {
+  display: flex;
+  flex-flow: row nowrap;
+  height: 600px;
+}

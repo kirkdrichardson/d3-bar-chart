@@ -1,5 +1,7 @@
 import React, { Component } from 'react';
 import styled from 'styled-components';
+import * as d3 from 'd3';
+window.d3 = d3;
 
 export default class App extends Component {
   constructor(props) {
@@ -9,6 +11,7 @@ export default class App extends Component {
       payload: null,
       errorMessage: null
     }
+    this.d3Container = React.createRef();
   }
 
   componentDidMount() {
@@ -23,6 +26,7 @@ export default class App extends Component {
     })
       .then((payload) => {
         if (payload) {
+          this.feedD3Container(payload.data);
           this.setState({
             fetching: false,
             payload
@@ -46,11 +50,25 @@ export default class App extends Component {
     }
   }
 
+  feedD3Container = (dataset) => {
+    if (this.d3Container && this.d3Container.current) {
+      window.d3.select(this.d3Container.current)
+        .selectAll("div")
+        .data(dataset)
+        .enter()
+        .append("div")
+        .attr("class", "bar")
+        // Add your code below this line
+        .style("height", (d) => ((600 - Math.round(d[1] / 50)) + "px"))
+    }
+  }
+
 
   render() {
     const {
       errorMessage,
-      fetching
+      fetching,
+      payload
     } = this.state;
 
     return (
@@ -61,12 +79,14 @@ export default class App extends Component {
             { /* TODO - replace with spinner */}
             { fetching && <span style={{color: 'black'}}>'loading...'</span> }
             { errorMessage && <Error>{ errorMessage }</Error> }
+              <div className='container' ref={this.d3Container} />
           </Chart>
         </ChartContainer>
       </AppContainer>
     );
   }
 }
+
 
 const AppContainer = styled.div`
   position: absolute;
