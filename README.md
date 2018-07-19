@@ -1,3 +1,3 @@
-#Visualize data with a bar chart
+# Visualize data with a bar chart
 
 US GDP
