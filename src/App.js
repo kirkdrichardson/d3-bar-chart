@@ -1,7 +1,12 @@
 import React, { Component } from 'react';
 import styled from 'styled-components';
 import * as d3 from 'd3';
-window.d3 = d3;
+// window.d3 = d3;
+
+const svgHeight = 600;
+const svgWidth = 800;
+
+const barWidth = 10;
 
 export default class App extends Component {
   constructor(props) {
@@ -35,7 +40,7 @@ export default class App extends Component {
       })
       .catch((err) => {
         console.error(err)
-        this.setState({ errorMessage: 'Failed to load GDP data' });
+        this.setState({ errorMessage: 'Failed to load GDP data', err });
       })
   }
 
@@ -51,17 +56,84 @@ export default class App extends Component {
   }
 
   feedD3Container = (dataset) => {
-    if (this.d3Container && this.d3Container.current) {
-      window.d3.select(this.d3Container.current)
-        .selectAll("div")
+    const node = this.d3Container.current;
+
+    // get the min and max GDP
+    const min = d3.min(dataset, d => d[1])
+    const max = d3.max(dataset, d => d[1])
+
+    // create a linear scale
+    const yScale = d3.scaleLinear()
+      .domain([0, d3.max(dataset, d => d[1])])
+      .range([0, svgHeight]);
+
+    const xScale = d3.scaleLinear()
+      .domain([0, (dataset.length - 1) * 10])
+      .range([0, svgWidth]);
+
+    // append rect elements
+    d3.select(node)
+      .selectAll("rect")
         .data(dataset)
         .enter()
-        .append("div")
+        .append("rect")
         .attr("class", "bar")
-        // Add your code below this line
-        .style("height", (d) => ((600 - Math.round(d[1] / 50)) + "px"))
-    }
+        .attr('x', (d, i) => xScale(i * 10))
+        .attr('y', d => svgHeight - yScale(d[1]))
+        .attr('height', d => Math.round(yScale((d[1]))))
+        // .style("height", (d) => ((600 - Math.round(d[1] / 50)) + "px"))
+
+        // append a title tooltip with the gdp value to each rect
+        .append('title')
+        .text(d => d[1]);
+
+
+      const xAxis = d3.axisBottom(xScale);
+
+      d3.select(node)
+        .append('g')
+        .attr("transform", "translate(0, " + (svgHeight - 30) + ")")
+        .call(xAxis);
+
+      // d3.select(node)
+      //   .selectAll('text')
+      //     .data(dataset)
+      //     .enter()
+      //     .append('text')
+      //     .attr('x', (d, i) => i * 10)
+      //     .attr('y', d => 600 - ( d[1] / 3) - 3)
+      //     .text(d => Math.round(d[1]))
+
   }
+
+  // NOTE: this is only for reference
+//   createBarChart() {
+//    const node = this.node
+//    const dataMax = max(this.props.data)
+//    const yScale = scaleLinear()
+//       .domain([0, dataMax])
+//       .range([0, this.props.size[1]])
+// select(node)
+//    .selectAll('rect')
+//    .data(this.props.data)
+//    .enter()
+//    .append('rect')
+//
+// select(node)
+//    .selectAll('rect')
+//    .data(this.props.data)
+//    .exit()
+//    .remove()
+//
+// select(node)
+//    .selectAll('rect')
+//    .data(this.props.data)
+//    .style('fill', '#fe9922')
+//    .attr('x', (d,i) => i * 25)
+//    .attr('y', d => this.props.size[1] — yScale(d))
+//    .attr('height', d => yScale(d))
+//    .attr('width', 25)
+// }
 
 
   render() {
@@ -79,7 +151,8 @@ export default class App extends Component {
             { /* TODO - replace with spinner */}
             { fetching && <span style={{color: 'black'}}>'loading...'</span> }
             { errorMessage && <Error>{ errorMessage }</Error> }
-              <div className='container' ref={this.d3Container} />
+
+              <svg className='container' ref={this.d3Container} />
           </Chart>
         </ChartContainer>
       </AppContainer>
@@ -112,10 +185,24 @@ const Chart = styled.div`
   min-height: 300px;
   min-width: 375px;
   background: #fafafa;
+
+  svg {
+    border: 1px solid coral;
+    width: ${svgWidth}px;
+    height: ${svgHeight}px;
+  }
 `;
 
 const Error = styled.div`
   background: red;
   color: white;
   padding: 20px;
+`;
+
+const Tooltip = styled.div`
+  height: 100px;
+  width: 200px;
+  border-radius: 6px;
+  background: lightblue;
+  color: white;
 `;

@@ -1,6 +1,12 @@
 .bar {
-  background: blue;
-  border: 1px solid blue;
+  width: 8px;
+  fill: navy;
+  outline: 1px solid coral;
+}
+
+.bar:hover {
+  fill: blue;
+  outline: navy;
 }
 
 .container {
