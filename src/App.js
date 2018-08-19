@@ -5,6 +5,7 @@ import * as d3 from 'd3';
 
 const svgHeight = 600;
 const svgWidth = 800;
+const padding = 60;
 
 const barWidth = 10;
 
@@ -65,11 +66,11 @@ export default class App extends Component {
     // create a linear scale
     const yScale = d3.scaleLinear()
       .domain([0, d3.max(dataset, d => d[1])])
-      .range([0, svgHeight]);
+      .range([svgHeight - padding, padding]);
 
     const xScale = d3.scaleLinear()
       .domain([0, (dataset.length - 1) * 10])
-      .range([0, svgWidth]);
+      .range([padding, svgWidth - padding]);
 
     // append rect elements
     d3.select(node)
@@ -79,8 +80,8 @@ export default class App extends Component {
         .append("rect")
         .attr("class", "bar")
         .attr('x', (d, i) => xScale(i * 10))
-        .attr('y', d => svgHeight - yScale(d[1]))
-        .attr('height', d => Math.round(yScale((d[1]))))
+        .attr('y', d => svgHeight - (padding + yScale(d[1])))
+        .attr('height', d => yScale((d[1])))
         // .style("height", (d) => ((600 - Math.round(d[1] / 50)) + "px"))
 
         // append a title tooltip with the gdp value to each rect
@@ -89,11 +90,18 @@ export default class App extends Component {
 
 
       const xAxis = d3.axisBottom(xScale);
+      const yAxis = d3.axisLeft(yScale);
 
       d3.select(node)
         .append('g')
-        .attr("transform", "translate(0, " + (svgHeight - 30) + ")")
+        .attr("transform", `translate(0, ${(svgHeight - padding)})`)
         .call(xAxis);
+
+      d3.select(node)
+        .append('g')
+        .attr('transform', `translate(${padding}, 0)`)
+        .call(yAxis);
+
 
       // d3.select(node)
       //   .selectAll('text')
