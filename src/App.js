@@ -14,7 +14,7 @@ export default class App extends Component {
     super(props);
     this.state = {
       fetching: true,
-      payload: null,
+      data: null,
       errorMessage: null
     }
     this.d3Container = React.createRef();
@@ -32,10 +32,13 @@ export default class App extends Component {
     })
       .then((payload) => {
         if (payload) {
-          this.feedD3Container(payload.data);
+          const { data } = payload;
+
           this.setState({
             fetching: false,
-            payload
+            data
+          }, () => {
+            this.buildGraph(data)
           });
         }
       })
@@ -56,32 +59,54 @@ export default class App extends Component {
     }
   }
 
-  feedD3Container = (dataset) => {
-    const node = this.d3Container.current;
 
-    // get the min and max GDP
-    const min = d3.min(dataset, d => d[1])
-    const max = d3.max(dataset, d => d[1])
+  buildGraph = (data) => {
+    // the svg element we will modify
+    const node = this.d3Container.current;
+    // helper function to parse year from string such as '1975-01-01'
+    const getYear = yearMonthDay => yearMonthDay.match(/^\d{4}/)[0];
+
+    const gdpArray = [],
+          yearsArray = [];
+
+    for (let i = 0; i < data.length; i++) {
+      gdpArray.push(data[i][1]);
+      yearsArray.push(getYear(data[i][0]));
+    }
+
+
+
+    // get the min and max values for each scale (gdp on y and years on x)
+    const minGdp = Math.min(...gdpArray),
+          maxGdp = Math.max(...gdpArray),
+          minYear = Math.min(...yearsArray),
+          maxYear = Math.max(...yearsArray);
+
 
     // create a linear scale
     const yScale = d3.scaleLinear()
-      .domain([0, d3.max(dataset, d => d[1])])
+      .domain([minGdp, maxGdp])
       .range([svgHeight - padding, padding]);
 
     const xScale = d3.scaleLinear()
-      .domain([0, (dataset.length - 1) * 10])
-      .range([padding, svgWidth - padding]);
+      .domain([minYear, maxYear])
+       // .domain([0, (data.length - 1) * 10])
+      .range([padding, svgWidth]);
 
     // append rect elements
     d3.select(node)
       .selectAll("rect")
-        .data(dataset)
+        .data(data)
         .enter()
         .append("rect")
         .attr("class", "bar")
-        .attr('x', (d, i) => xScale(i * 10))
-        .attr('y', d => svgHeight - (padding + yScale(d[1])))
-        .attr('height', d => yScale((d[1])))
+        .attr('x', (d, i) => xScale(getYear(d[0])))
+        // .attr('y', d => svgHeight - (padding + yScale(d[1])))
+        .attr('height', d => {
+          // TODO - REMOVE LOG, invert bar
+          console.log(yScale(d[1]))
+          return yScale((d[1]))
+        })
         // .style("height", (d) => ((600 - Math.round(d[1] / 50)) + "px"))
 
         // append a title tooltip with the gdp value to each rect
@@ -105,7 +130,7 @@ export default class App extends Component {
 
       // d3.select(node)
       //   .selectAll('text')
-      //     .data(dataset)
+      //     .data(data)
       //     .enter()
       //     .append('text')
       //     .attr('x', (d, i) => i * 10)
@@ -148,7 +173,7 @@ export default class App extends Component {
     const {
       errorMessage,
       fetching,
-      payload
+      data
     } = this.state;
 
     return (
@@ -156,11 +181,12 @@ export default class App extends Component {
         <ChartContainer>
           <h2>US GDP</h2>
           <Chart>
-            { /* TODO - replace with spinner */}
-            { fetching && <span style={{color: 'black'}}>'loading...'</span> }
             { errorMessage && <Error>{ errorMessage }</Error> }
-
-              <svg className='container' ref={this.d3Container} />
+            { /* TODO - replace with spinner */}
+            { fetching && !errorMessage && <span style={{color: 'black'}}>'loading...'</span> }
+            { data && !fetching && ! errorMessage &&
+                <svg className='container' ref={this.d3Container} />
+            }
           </Chart>
         </ChartContainer>
       </AppContainer>
