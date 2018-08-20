@@ -86,7 +86,7 @@ export default class App extends Component {
     // create a linear scale
     const yScale = d3.scaleLinear()
       .domain([minGdp, maxGdp])
-      .range([svgHeight - padding, padding]);
+      .range([padding, svgHeight - padding]);
 
     const xScale = d3.scaleLinear()
       .domain([minYear, maxYear])
@@ -101,14 +101,8 @@ export default class App extends Component {
         .append("rect")
         .attr("class", "bar")
         .attr('x', (d, i) => xScale(getYear(d[0])))
-        // .attr('y', d => svgHeight - (padding + yScale(d[1])))
-        .attr('height', d => {
-          // TODO - REMOVE LOG, invert bar
-          console.log(yScale(d[1]))
-          return yScale((d[1]))
-        })
-        // .style("height", (d) => ((600 - Math.round(d[1] / 50)) + "px"))
-
+        .attr('y', d => svgHeight - (padding + yScale(d[1])))
+        .attr('height', d => yScale((d[1])))
         // append a title tooltip with the gdp value to each rect
         .append('title')
         .text(d => d[1]);
