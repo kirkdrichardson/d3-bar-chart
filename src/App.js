@@ -91,7 +91,7 @@ export default class App extends Component {
     const xScale = d3.scaleLinear()
       .domain([minYear, maxYear])
        // .domain([0, (data.length - 1) * 10])
-      .range([padding, svgWidth]);
+      .range([padding, svgWidth - 20]);
 
     // append rect elements
     d3.select(node)
