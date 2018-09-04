@@ -2,8 +2,9 @@ import React, { Component } from 'react';
 import styled from 'styled-components';
 import * as d3 from 'd3';
 
-const svgHeight = 600;
 const svgWidth = 800;
+const svgHeight = Math.round(svgWidth / (16/9));
+const xTransformation = 10;
 const padding = 60;
 const barWidth = 10;
 
@@ -89,21 +90,25 @@ export default class BarChart extends Component {
       .range([svgHeight - padding, padding]);
 
     const xScale = d3.scaleLinear()
-      .domain([0, (data.length - 1) * 10])
+      .domain([0, (data.length - 1) * xTransformation])
       .range([padding, svgWidth - 20]);
 
-    const scaledData = data.map(e => {
-      e[1] = yScale(e[1]);
-      return e;
-    });
+    // tranform the original data into an array of objects containing scaled x, y properties
+    const scaledData = data.map((e, i) =>
+    ({
+      x: xScale(i * xTransformation),
+      y: yScale(e[1]),
+      date: e[0]
+    }));
 
-    //
-    // const xAxisScale = d3.scaleLinear()
-    //   .domain([minYear, maxYear])
-    //   .range([padding, svgWidth - 20]);
+    const xAxisScale = d3.scaleTime()
+      .domain([minYear, maxYear])
+      .range([padding, svgWidth - 20]);
 
     const xAxis = d3.axisBottom()
-      .scale(xScale);
+      .scale(xAxisScale)
+      .tickFormat(d3.format('d'));
+
 
     const yAxis = d3.axisLeft(yAxisScale);
 
@@ -114,9 +119,9 @@ export default class BarChart extends Component {
         .enter()
         .append("rect")
         .attr("class", "bar")
-        .attr('x', (d, i) => xScale(i * 10))
-        .attr('y', d => svgHeight - padding - d[1])
-        .attr('height', d => d[1])
+        .attr('x', (d, i) => d.x)
+        .attr('y', d => svgHeight - padding - d.y)
+        .attr('height', d => d.y)
         // append a title tooltip with the gdp value to each rect
         .append('title')
         .text(d => d[1]);
@@ -130,48 +135,7 @@ export default class BarChart extends Component {
         .append('g')
         .attr('transform', `translate(${padding}, 0)`)
         .call(yAxis);
-
-
-      // d3.select(node)
-      //   .selectAll('text')
-      //     .data(data)
-      //     .enter()
-      //     .append('text')
-      //     .attr('x', (d, i) => i * 10)
-      //     .attr('y', d => 600 - ( d[1] / 3) - 3)
-      //     .text(d => Math.round(d[1]))
-
   }
-
-  // NOTE: this is only for reference
-//   createBarChart() {
-//    const node = this.node
-//    const dataMax = max(this.props.data)
-//    const yScale = scaleLinear()
-//       .domain([0, dataMax])
-//       .range([0, this.props.size[1]])
-// select(node)
-//    .selectAll('rect')
-//    .data(this.props.data)
-//    .enter()
-//    .append('rect')
-//
-// select(node)
-//    .selectAll('rect')
-//    .data(this.props.data)
-//    .exit()
-//    .remove()
-//
-// select(node)
-//    .selectAll('rect')
-//    .data(this.props.data)
-//    .style('fill', '#fe9922')
-//    .attr('x', (d,i) => i * 25)
-//    .attr('y', d => this.props.size[1] — yScale(d))
-//    .attr('height', d => yScale(d))
-//    .attr('width', 25)
-// }
-
 
   render() {
     const {
