@@ -1,12 +1,10 @@
 import React, { Component } from 'react';
 import styled from 'styled-components';
 import * as d3 from 'd3';
-// window.d3 = d3;
 
 const svgHeight = 600;
 const svgWidth = 800;
 const padding = 60;
-
 const barWidth = 10;
 
 export default class BarChart extends Component {
@@ -64,17 +62,15 @@ export default class BarChart extends Component {
     // the svg element we will modify
     const node = this.d3Container.current;
     // helper function to parse year from string such as '1975-01-01'
-    const getYear = yearMonthDay => yearMonthDay.match(/^\d{4}/)[0];
+    const getYear = dateTimeString => dateTimeString.match(/^\d{4}/)[0];
 
     const gdpArray = [],
           yearsArray = [];
 
-    for (let i = 0; i < data.length; i++) {
-      gdpArray.push(data[i][1]);
-      yearsArray.push(getYear(data[i][0]));
-    }
-
-
+    data.forEach(e => {
+      gdpArray.push(e[1]);
+      yearsArray.push(getYear(e[0]));
+    });
 
     // get the min and max values for each scale (gdp on y and years on x)
     const minGdp = Math.min(...gdpArray),
@@ -82,34 +78,48 @@ export default class BarChart extends Component {
           minYear = Math.min(...yearsArray),
           maxYear = Math.max(...yearsArray);
 
-
     // create a linear scale
     const yScale = d3.scaleLinear()
-      .domain([minGdp, maxGdp])
+      .domain([0, maxGdp])
       .range([padding, svgHeight - padding]);
 
+      // create a linear scale
+    const yAxisScale = d3.scaleLinear()
+      .domain([0, maxGdp])
+      .range([svgHeight - padding, padding]);
+
     const xScale = d3.scaleLinear()
-      .domain([minYear, maxYear])
-       // .domain([0, (data.length - 1) * 10])
+      .domain([0, (data.length - 1) * 10])
       .range([padding, svgWidth - 20]);
+
+    const scaledData = data.map(e => {
+      e[1] = yScale(e[1]);
+      return e;
+    });
+
+    //
+    // const xAxisScale = d3.scaleLinear()
+    //   .domain([minYear, maxYear])
+    //   .range([padding, svgWidth - 20]);
+
+    const xAxis = d3.axisBottom()
+      .scale(xScale);
+
+    const yAxis = d3.axisLeft(yAxisScale);
 
     // append rect elements
     d3.select(node)
       .selectAll("rect")
-        .data(data)
+        .data(scaledData)
         .enter()
         .append("rect")
         .attr("class", "bar")
-        .attr('x', (d, i) => xScale(getYear(d[0])))
-        .attr('y', d => svgHeight - (padding + yScale(d[1])))
-        .attr('height', d => yScale((d[1])))
+        .attr('x', (d, i) => xScale(i * 10))
+        .attr('y', d => svgHeight - padding - d[1])
+        .attr('height', d => d[1])
         // append a title tooltip with the gdp value to each rect
         .append('title')
         .text(d => d[1]);
-
-
-      const xAxis = d3.axisBottom(xScale);
-      const yAxis = d3.axisLeft(yScale);
 
       d3.select(node)
         .append('g')
