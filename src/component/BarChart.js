@@ -62,8 +62,10 @@ export default class BarChart extends Component {
   buildGraph = (data) => {
     // the svg element we will modify
     const node = this.d3Container.current;
-    // helper function to parse year from string such as '1975-01-01'
-    const getYear = dateTimeString => dateTimeString.match(/^\d{4}/)[0];
+    // helper functions to parse year from string such as '1975-01-01'
+    const matchYearMonthQuarter = dateTimeString => dateTimeString.match(/(^\d{4})-(\d{2})-(\d{2}$)/);
+    const getYear = dateTimeString => matchYearMonthQuarter(dateTimeString)[1];
+    const getQuarter = dateTimeString => matchYearMonthQuarter(dateTimeString)[3];
 
     const gdpArray = [],
           yearsArray = [];
@@ -98,7 +100,10 @@ export default class BarChart extends Component {
     ({
       x: xScale(i * xTransformation),
       y: yScale(e[1]),
-      date: e[0]
+      date: e[0],
+      gdp: e[1],
+      year: getYear(e[0]),
+      quarter: getQuarter(e[0])
     }));
 
     const xAxisScale = d3.scaleTime()
@@ -124,7 +129,8 @@ export default class BarChart extends Component {
         .attr('height', d => d.y)
         // append a title tooltip with the gdp value to each rect
         .append('title')
-        .text(d => d[1]);
+        .text(d => `$${d.gdp.toFixed(1)} Billion
+          ${d.year} Q${Number(d.quarter)}`);
 
       d3.select(node)
         .append('g')
@@ -159,17 +165,16 @@ export default class BarChart extends Component {
 
 
 const Chart = styled.div`
-  height: 600px;
-  width: 800px;
   min-height: 300px;
   min-width: 375px;
   background: #fafafa;
 
   svg {
-    border: 1px solid coral;
     width: ${svgWidth}px;
     height: ${svgHeight}px;
   }
+
+  border: 1px solid coral;
 `;
 
 const Error = styled.div`
