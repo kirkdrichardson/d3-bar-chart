@@ -3,5 +3,14 @@ html, body {
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: sans-serif;
+  font-family: monospace, sans-serif;
+}
+
+  html {
+  background: rgba(34, 34, 34, 0.64);
+  background: url('./usFlag.png') no-repeat center center fixed;
+  -webkit-background-size: cover;
+  -moz-background-size: cover;
+  -o-background-size: cover;
+  background-size: cover;
 }

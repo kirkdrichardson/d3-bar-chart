@@ -1,14 +1,16 @@
-import React, { Component } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import * as d3 from 'd3';
 
+import LoadingGrid from './LoadingGrid';
+
+
 const svgWidth = 800;
-const svgHeight = Math.round(svgWidth / (16/9));
+const svgHeight = Math.round(svgWidth / (16 / 9));
 const xTransformation = 10;
 const padding = 60;
-const barWidth = 10;
 
-export default class BarChart extends Component {
+export default class BarChart extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
@@ -21,20 +23,29 @@ export default class BarChart extends Component {
 
   componentDidMount() {
     fetch('https://raw.githubusercontent.com/freeCodeCamp/ProjectReferenceData/master/GDP-data.json')
-    .then((resp) => {
-      if (resp.ok) {
-        return resp.json();
-      } else {
-        this.handleError('Request failed with errorCode: ', resp, 'status')
-        this.setState({ fetching: false });
-      }
-    })
+      .then((resp) => {
+        if (resp.ok) {
+          return resp.json();
+        } else {
+          this.handleError('Request failed with errorCode: ', resp, 'status');
+          this.setState({
+            fetching: false
+          });
+        }
+      })
       .then((payload) => {
         if (payload) {
-          const { data } = payload;
+          const {
+            data
+          } = payload;
+
+          setTimeout(() => {
+            this.setState({
+              fetching: false
+            });
+          }, 800);
 
           this.setState({
-            fetching: false,
             data
           }, () => {
             this.buildGraph(data)
@@ -43,7 +54,10 @@ export default class BarChart extends Component {
       })
       .catch((err) => {
         console.error(err)
-        this.setState({ errorMessage: 'Failed to load GDP data', err });
+        this.setState({
+          errorMessage: 'Failed to load GDP data',
+          err
+        });
       })
   }
 
@@ -53,7 +67,9 @@ export default class BarChart extends Component {
       console.warn(errorMessage);
 
       if (setState) {
-        this.setState({ errorMessage });
+        this.setState({
+          errorMessage
+        });
       }
     }
   }
@@ -65,10 +81,34 @@ export default class BarChart extends Component {
     // helper functions to parse year from string such as '1975-01-01'
     const matchYearMonthQuarter = dateTimeString => dateTimeString.match(/(^\d{4})-(\d{2})-(\d{2}$)/);
     const getYear = dateTimeString => matchYearMonthQuarter(dateTimeString)[1];
-    const getQuarter = dateTimeString => matchYearMonthQuarter(dateTimeString)[3];
+    const getMonth = dateTimeString => matchYearMonthQuarter(dateTimeString)[2];
+
+    // https://stackoverflow.com/questions/149055/how-can-i-format-numbers-as-dollars-currency-string-in-javascript
+    const formatMoney = (n, c, d, t) => {
+      var c = isNaN(c = Math.abs(c)) ? 2 : c,
+        d = d == undefined ? "." : d,
+        t = t == undefined ? "," : t,
+        s = n < 0 ? "-" : "",
+        i = String(parseInt(n = Math.abs(Number(n) || 0).toFixed(c))),
+        j = (j = i.length) > 3 ? j % 3 : 0;
+      return s + (j ? i.substr(0, j) + t : "") + i.substr(j).replace(/(\d{3})(?=\d)/g, "$1" + t) + (c ? d + Math.abs(n - i).toFixed(c).slice(2) : "");
+    };
+
+    const assignQuarter = (month) => {
+      switch (month) {
+        case '01':
+          return 1;
+        case '04':
+          return 2;
+        case '07':
+          return 3;
+        default:
+          return 4;
+      }
+    }
 
     const gdpArray = [],
-          yearsArray = [];
+      yearsArray = [];
 
     data.forEach(e => {
       gdpArray.push(e[1]);
@@ -76,17 +116,16 @@ export default class BarChart extends Component {
     });
 
     // get the min and max values for each scale (gdp on y and years on x)
-    const minGdp = Math.min(...gdpArray),
-          maxGdp = Math.max(...gdpArray),
-          minYear = Math.min(...yearsArray),
-          maxYear = Math.max(...yearsArray);
+    const maxGdp = Math.max(...gdpArray),
+      minYear = Math.min(...yearsArray),
+      maxYear = Math.max(...yearsArray);
 
     // create a linear scale
     const yScale = d3.scaleLinear()
       .domain([0, maxGdp])
       .range([padding, svgHeight - padding]);
 
-      // create a linear scale
+    // create a linear scale
     const yAxisScale = d3.scaleLinear()
       .domain([0, maxGdp])
       .range([svgHeight - padding, padding]);
@@ -97,14 +136,14 @@ export default class BarChart extends Component {
 
     // tranform the original data into an array of objects containing scaled x, y properties
     const scaledData = data.map((e, i) =>
-    ({
-      x: xScale(i * xTransformation),
-      y: yScale(e[1]),
-      date: e[0],
-      gdp: e[1],
-      year: getYear(e[0]),
-      quarter: getQuarter(e[0])
-    }));
+      ({
+        x: xScale(i * xTransformation),
+        y: yScale(e[1]),
+        date: e[0],
+        gdp: e[1],
+        year: getYear(e[0]),
+        quarter: assignQuarter(getMonth(e[0]))
+      }));
 
     const xAxisScale = d3.scaleTime()
       .domain([minYear, maxYear])
@@ -120,27 +159,27 @@ export default class BarChart extends Component {
     // append rect elements
     d3.select(node)
       .selectAll("rect")
-        .data(scaledData)
-        .enter()
-        .append("rect")
-        .attr("class", "bar")
-        .attr('x', (d, i) => d.x)
-        .attr('y', d => svgHeight - padding - d.y)
-        .attr('height', d => d.y)
-        // append a title tooltip with the gdp value to each rect
-        .append('title')
-        .text(d => `$${d.gdp.toFixed(1)} Billion
-          ${d.year} Q${Number(d.quarter)}`);
+      .data(scaledData)
+      .enter()
+      .append("rect")
+      .attr("class", "bar")
+      .attr('x', (d, i) => d.x)
+      .attr('y', d => svgHeight - padding - d.y)
+      .attr('height', d => d.y)
+      // append a title tooltip with the gdp value to each rect
+      .append('title')
+      .text(d => `$${formatMoney(d.gdp, d.gdp > 999 ? 0 : 1)} Billion
+					${d.year} Q${d.quarter}`);
 
-      d3.select(node)
-        .append('g')
-        .attr("transform", `translate(0, ${(svgHeight - padding)})`)
-        .call(xAxis);
+    d3.select(node)
+      .append('g')
+      .attr("transform", `translate(0, ${(svgHeight - padding)})`)
+      .call(xAxis);
 
-      d3.select(node)
-        .append('g')
-        .attr('transform', `translate(${padding}, 0)`)
-        .call(yAxis);
+    d3.select(node)
+      .append('g')
+      .attr('transform', `translate(${padding}, 0)`)
+      .call(yAxis);
   }
 
   render() {
@@ -151,42 +190,36 @@ export default class BarChart extends Component {
     } = this.state;
 
     return (
-      <Chart>
-        { errorMessage && <Error>{ errorMessage }</Error> }
-        { /* TODO - replace with spinner */}
-        { fetching && !errorMessage && <span style={{color: 'black'}}>'loading...'</span> }
-        { data && !fetching && ! errorMessage &&
-            <svg className='container' ref={this.d3Container} />
+      <Chart >
+        {errorMessage && <Error>{errorMessage}</Error> }
+        { fetching && !errorMessage && < LoadingGrid / >}
+        { data && !errorMessage &&
+            <svg
+              style={{ display: `${fetching ? 'none' : 'flex'}`}}
+              className='container'
+              ref={ this.d3Container} />
         }
-      </Chart>
-    );
-  }
-}
-
-
-const Chart = styled.div`
-  min-height: 300px;
-  min-width: 375px;
-  background: #fafafa;
-
-  svg {
-    width: ${svgWidth}px;
-    height: ${svgHeight}px;
+        </Chart>
+      );
+    }
   }
 
-  border: 1px solid coral;
+
+  const Chart = styled.div `
+	min-height: 300px;
+	min-width: 375px;
+	background: #fafafa;
+
+	svg {
+		width: ${svgWidth}px;
+		height: ${svgHeight}px;
+	}
+
+	border: 1px solid coral;
 `;
 
-const Error = styled.div`
-  background: red;
-  color: white;
-  padding: 20px;
-`;
-
-const Tooltip = styled.div`
-  height: 100px;
-  width: 200px;
-  border-radius: 6px;
-  background: lightblue;
-  color: white;
+  const Error = styled.div `
+	background: red;
+	color: white;
+	padding: 20px;
 `;
