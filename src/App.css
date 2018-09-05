@@ -1,11 +1,10 @@
 .bar {
-  width: 8px;
-  fill: navy;
-  outline: 1px solid coral;
+  width: 2.6px;
+  fill: rgb(48, 110, 18);
 }
 
 .bar:hover {
-  fill: blue;
+  fill: rgb(80, 147, 48);
   outline: navy;
 }
 
